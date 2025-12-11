@@ -122,15 +122,16 @@ class Point:
 		return math.sqrt(sum(value ** 2 for value in self))
 
 
-	def project(self, lense_z: int, plane_depth: int) -> Point:
+	def project(self, point_distance_from_lense: int, screen_distance_from_lense: int) -> Point:
 		# TODO: Make relative lense coordinate.
 		"""
 		FROM https://www.scratchapixel.com/lessons/3d-basic-rendering/computing-pixel-coordinates-of-3d-point/mathematics-computing-2d-coordinates-of-3d-points
 		---
-		    (self.x / lense_z) == (x / plane_depth)
-		    => x = (self.x * plane_depth / lense_z)
+		    (self.x / point_distance_from_lense) == (x / screen_distance_from_lense)
+		    => x = (self.x * screen_distance_from_lense / point_distance_from_lense)
 		"""
-		return Point(*[self[axis] * plane_depth / lense_z if(lense_z) else 0 for axis in range(len(self)-1)])
+		ratio = screen_distance_from_lense / point_distance_from_lense if(point_distance_from_lense) else 0
+		return self * ratio
 
 
 	def rotate(x_matrix: list[list[int]], y_matrix: list[list[int]], z_matrix: list[list[int]]):
