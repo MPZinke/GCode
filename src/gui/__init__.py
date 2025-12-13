@@ -1,10 +1,11 @@
 
+import math
 from tkinter import *
 from tkinter import ttk
 
 
 from gcode import GCode
-from geometry import Path, X, Y, Z
+from geometry import Path, Point, X, Y, Z
 
 
 Width = int
@@ -35,15 +36,38 @@ class GUI(Tk):
 		self._pixels_per_inch: float = pixels_per_inch
 		self._screen_size: tuple[int, int] = [1440, 847]
 
+		self.bind("<Up>", self.on_scroll)
+		self.bind("<Down>", self.on_scroll)
+
 		self.gcode = gcode
 
 
+	def on_scroll(self, event):
+		# self._current_location[Z] += event.delta/120
+		self._current_location[Z] += 1 if(event.keysym == "Up") else -1
+		self.redraw()
+
+
+	def redraw(self):
+		self._canvas.delete("all")
+		self.draw()
+
+
 	def draw(self):
-		self._canvas.create_line([1440//2, 847//2, 126+1440//2, 847//2], fill="white", width="1i")
+		# self._canvas.create_line([1440//2, 847//2, 126+1440//2, 847//2], fill="white", width="1i")
 		# TODO: Make dynamic
-		center = [self._screen_size[WIDTH]//2, self._screen_size[HEIGHT]//2]
-		self._canvas.create_line([center[WIDTH], center[HEIGHT], self._screen_size[WIDTH], center[HEIGHT]], fill="red", width=5)
-		self._canvas.create_line([center[WIDTH], center[HEIGHT], center[WIDTH], 0], fill="green", width=5)
+		# Determine zoom (distance to center) to determine line length
+		origin_distance: float = math.sqrt(self._current_location[X]**2 + self._current_location[Y]**2 + self._current_location[Z]**2)
+
+		x_axis_path = Path(Point(0, 0, 0), Point(origin_distance / 18, 0, 0))
+		y_axis_path = Path(Point(0, 0, 0), Point(0, origin_distance / 18, 0))
+		z_axis_path = Path(Point(0, 0, 0), Point(0, 0, origin_distance / 18))
+		# Translate
+		# Rotate
+
+		self.draw_line(x_axis_path, "red")
+		self.draw_line(y_axis_path, "green")
+		self.draw_line(z_axis_path, "blue")
 
 		# Draw axes
 		for path in self.gcode:
@@ -57,8 +81,6 @@ class GUI(Tk):
 		# Translate for GUI display (inverted y-axis and translated x & y axes)
 		inverted_points = [(coordinate * (-1 if(x & 1) else 1)) for x, coordinate in enumerate(coordinates)]
 		centered_points = [(coordinate + (self._screen_size[HEIGHT] if(x & 1) else self._screen_size[WIDTH])//2) for x, coordinate in enumerate(inverted_points)]  # TODO: HEIGHT & WIDTH
-
-		print(centered_points, end="\n\n")
 
 		self._canvas.create_line(*centered_points, fill=color, width=2)
 
