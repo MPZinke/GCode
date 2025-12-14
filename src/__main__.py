@@ -20,9 +20,7 @@ from gui import GUI
 
 def main():
 	gcode = GCode("G1 X1\nG1 Y1\nG1 X0 Y0")
-	gui = GUI(gcode, 126)
-	gui.draw()
-	gui.mainloop()
+	gcode.draw()
 
 
 if(__name__ == "__main__"):

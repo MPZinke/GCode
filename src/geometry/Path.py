@@ -26,7 +26,7 @@ from geometry.Point import Point
 
 
 Path = type("Path", (), {})
-θ = float
+θ = int|float
 
 
 class Path:
@@ -112,9 +112,9 @@ class Path:
 		return Path(*[point.rotate(x_rotation_matrix, y_rotation_matrix, z_rotation_matrix) for point in self.points])
 
 
-	def scale(self, *scalings: list[float]) -> Point:
+	def scale(self, *scalings: list[int|float]) -> Point:
 		return Path[len(self)](*map(lambda point: point.scale(*scalings), self))
 
 
-	def translate(self, *translations: list[int]):
-		[point.translate(*translations) for point in self.points]
+	def translate(self, *translations: list[int|float]):
+		return Path[len(self)](*map(lambda point: point.translate(*translations), self.points))

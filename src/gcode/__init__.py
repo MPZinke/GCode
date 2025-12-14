@@ -64,7 +64,6 @@ class GCode:
 		self._current_location = Point(0, 0, 0)
 
 
-
 	def _interpret(self, data: bytes|str|IOBase|Path) -> None:
 		match(data):
 			case bytes():
@@ -109,3 +108,18 @@ class GCode:
 
 		self._current_location = path[-1]
 		return path
+
+
+	def draw(self) -> None:
+		from gui import GUI
+
+		gui = GUI()
+
+		current_location = Point[3](0, 0, 0)
+		for command in self.commands:
+			path: Path = command.path(current_location)
+			if path is not None:
+				gui.add_path(path)
+				current_location = path[-1]
+
+		gui.render()
