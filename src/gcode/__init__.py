@@ -44,15 +44,15 @@ class Command:
 	def path(self, start: Point) -> Optional[Path]:
 		match(self.command):
 			case "G0" | "G1":
-				return Path(start, self._line_end() | start)
+				return Path(start, self._line_end(start))
 
 
-	def _line_end(self) -> Point:
-		x = next(map(lambda p: int(p[1:]), filter(lambda p: p.upper().startswith("X"), self.args)), None)
-		y = next(map(lambda p: int(p[1:]), filter(lambda p: p.upper().startswith("Y"), self.args)), None)
-		z = next(map(lambda p: int(p[1:]), filter(lambda p: p.upper().startswith("Z"), self.args)), None)
+	def _line_end(self, start: Point) -> Point[3]:
+		x = next(map(lambda p: int(p[1:]), filter(lambda p: p.upper().startswith("X"), self.args)), start.x)
+		y = next(map(lambda p: int(p[1:]), filter(lambda p: p.upper().startswith("Y"), self.args)), start.y)
+		z = next(map(lambda p: int(p[1:]), filter(lambda p: p.upper().startswith("Z"), self.args)), start.z)
 
-		return Point(x, y, z)
+		return Point[3](x, y, z)
 
 
 class GCode:

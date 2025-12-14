@@ -14,8 +14,10 @@ __author__ = "MPZinke"
 ########################################################################################################################
 
 
+from itertools import zip_longest
 import json
 import math
+from typing import Optional
 
 
 Point = type("Point", (), {})
@@ -27,11 +29,29 @@ Z = 2
 
 
 class Point:
-	def __init__(self, *coordinates: list[int]):
-		self.coordinates: list[int] = list(coordinates)
+	__size__: Optional[int] = None
 
 
-	def __iter__(self) -> list:
+	def __class_getitem__(cls, __size__: int):
+		if(not isinstance(__size__, int)):
+			raise TypeError(f"For Point[size], size must be of type int, not {type(__size__).__name__}")
+
+		name = f"""{cls.__name__}[{__size__}]"""
+		return type(name, (cls,), {"__size__": __size__})
+
+
+	def __init__(self, *coordinates: list[int|float]):
+		if(self.__size__ is not None and len(coordinates) != self.__size__):
+			raise ValueError(f"Expect size {self.__size__}, received {len(coordinates)}")
+
+		for coordinate in coordinates:
+			if(not isinstance(coordinate, (int, float))):
+				raise TypeError(f"Invalid coordinate type {type(coordinate).__name__}")
+
+		self.coordinates: list[int|float] = list(coordinates)
+
+
+	def __iter__(self) -> iter:
 		yield from self.coordinates
 
 
@@ -63,10 +83,13 @@ class Point:
 		return Point(*[a / right if(right) else 0 for a in left])
 
 
-	def __mul__(left: Point, right: int|float|Point) -> int:
+	def __mul__(left: Point, right: int|float|Point|list[int|float]) -> int|Point:
 		# TODO: Probably worthless—clean up
 		if(isinstance(right, (int, float))):
 			return Point(*[point * right for point in left])
+
+		if(isinstance(right, list)):
+			return Point(*map(lambda a, b: a * b, left, right))
 
 		# Dot product
 		if(isinstance(right, Point)):
@@ -79,13 +102,15 @@ class Point:
 		"""
 		Create a copy of left and replace any None values with right's value.
 		"""
-		return Point(
-			*[left if(left is not None) else right for left, right in zip(left.coordinates, right.coordinates)]
-		)
+		if(len(left) != len(right)):
+			raise ValueError(f"Left size {left.__size__} does not match right size {len(right)}")
+
+		selector = lambda left, right: left if(left is not None) else right
+		return Point[len(left)](*map(selector, left.coordinates, right.coordinates))
 
 
 	def __rmul__(right, left) -> int:
-		return right * left
+		return right.__mul__(left)
 
 
 	def __pow__(left, right: float) -> Point:
@@ -98,17 +123,26 @@ class Point:
 
 	@property
 	def x(self) -> Point:
-		return self.coordinates[0]
+		if(len(self.coordinates) <= X):
+			return NotImplemented  # Pointless Point?
+
+		return self.coordinates[X]
 
 
 	@property
 	def y(self) -> Point:
-		return self.coordinates[1]
+		if(len(self.coordinates) <= Y):
+			return NotImplemented
+
+		return self.coordinates[Y]
 
 
 	@property
 	def z(self) -> Point:
-		return self.coordinates[2]
+		if(len(self.coordinates) <= Z):
+			return NotImplemented
+
+		return self.coordinates[Z]
 
 
 	def copy(self) -> Point:
@@ -131,16 +165,27 @@ class Point:
 		    => x = (self.x * screen_distance_from_lense / point_distance_from_lense)
 		"""
 		ratio = screen_distance_from_lense / point_distance_from_lense if(point_distance_from_lense) else 0
-		return self * ratio
+		return Point[len(self)-1](*[coordinate * ratio for coordinate in self.coordinates[:-1]])
 
 
-	def rotate(x_matrix: list[list[int]], y_matrix: list[list[int]], z_matrix: list[list[int]]):
+	def scale(self, *scalings: list[float]) -> Point:
+		scaled_coordinates: list[int|float] = []
+		for coordinate, scaling in zip_longest(self, scalings):
+			scaled_coordinates.append(coordinate * (scaling or 1))
+
+		return Point[len(self)](*scaled_coordinates)
+
+
+	def rotate(self, x_matrix: list[list[int|float]], y_matrix: list[list[int|float]], z_matrix: list[list[int|float]]):
 		"""
 		FROM: https://www.analyzemath.com/linear-algebra/applications-of-matrices/matrix-transformations-in-computer-graphics.html#google_vignette
 		"""
 		# TODO
 
 
-	def translate(self, *translations: list[int]) -> None:
-		for i, translation in enumerate(translations):
-			self.coordinates[i] += translation
+	def translate(self, *translations: list[int|float]) -> Point:
+		translated_coordinates: list[int|float] = []
+		for coordinate, translation in zip_longest(self, translations):
+			translated_coordinates.append(coordinate + (translation or 0))
+
+		return Point[len(self)](*translated_coordinates)

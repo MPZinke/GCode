@@ -16,6 +16,9 @@ __author__ = "MPZinke"
 
 import json
 from math import sin, cos
+from typing import Optional
+
+
 from tkinter import BOTH, Canvas, Frame, Tk
 
 
@@ -27,8 +30,18 @@ Path = type("Path", (), {})
 
 
 class Path:
+	__size__: Optional[int] = None
+
+
+	def __class_getitem__(cls, __size__: int):
+		if(not isinstance(__size__, int)):
+			raise TypeError(f"For Point[size], size must be of type int, not {type(__size__).__name__}")
+
+		name = f"""{cls.__name__}[{__size__}]"""
+		return type(name, (cls,), {"__size__": __size__})
+
+
 	def __init__(self, *points: tuple[Point]):
-		# TODO: accept generators
 		self.points: list[Point] = list(points)
 
 
@@ -37,7 +50,7 @@ class Path:
 
 
 	def __iter__(self) -> list:
-		yield from [list(point) for point in self.points]
+		yield from [point.copy() for point in self.points]
 
 
 	def __str__(self) -> str:
@@ -70,7 +83,7 @@ class Path:
 
 
 	def project(self, lense_z: int, plane_depth: int) -> Path:
-		return Path(*[point.project(lense_z, plane_depth) for point in self.points])
+		return Path(*[point.project(lense_z, plane_depth) for point in self.points[:2]])
 
 
 	def rotate(self, x_rotation: θ, y_rotation: θ, z_rotation: θ) -> Path:
@@ -99,11 +112,8 @@ class Path:
 		return Path(*[point.rotate(x_rotation_matrix, y_rotation_matrix, z_rotation_matrix) for point in self.points])
 
 
-	def scale(self, x_scale: float, y_scale: float, z_scale: float) -> Path:
-		scaled_points = []
-		for point in self.points:
-			scaled_points.append(Point(point.x * x_scale, point.y * y_scale, point.z * z_scale))
-		return Path(*scaled_points)
+	def scale(self, *scalings: list[float]) -> Point:
+		return Path[len(self)](*map(lambda point: point.scale(*scalings), self))
 
 
 	def translate(self, *translations: list[int]):
